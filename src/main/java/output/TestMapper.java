@@ -1,5 +1,11 @@
+package output;
+
 import com.stonybrook.zhensuyang.javabeanmapper.domain.SourceClass;
+import com.stonybrook.zhensuyang.javabeanmapper.domain.SourceType;
 import com.stonybrook.zhensuyang.javabeanmapper.domain.TargetClass;
+import com.stonybrook.zhensuyang.javabeanmapper.domain.TargetType;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestMapper {
 	public TargetClass map(SourceClass source) {
@@ -18,8 +24,8 @@ public class TestMapper {
 		List<TargetType> res = new ArrayList<>();
 		for (SourceType src : list) {
 			TargetType tgt = new TargetType();
-			tgt.setTypeA(src.getTypeA);
-			tgt.setTypeB(src.getTypeB);
+			tgt.setTypeA(src.getTypeA());
+			tgt.setTypeB(src.getTypeB());
 			res.add(tgt);
 		}
 		return res;
@@ -29,8 +35,8 @@ public class TestMapper {
 		List<TargetType> res = new ArrayList<>();
 		for (SourceType src : list) {
 			TargetType tgt = new TargetType();
-			tgt.setTypeA(src.getTypeA);
-			tgt.setTypeB(src.getTypeB);
+			tgt.setTypeA(src.getTypeA());
+			tgt.setTypeB(src.getTypeB());
 			res.add(tgt);
 		}
 		return res;

@@ -3,7 +3,6 @@ package com.stonybrook.zhensuyang.javabeanmapper.tool;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
-import java.net.URL;
 import java.util.*;
 
 /**
@@ -22,15 +21,17 @@ public class Mapper <S, T> {
     private Field[] targetFields;
     private LinkedList<String> output;
     private LinkedList<String> importClass;
+    private Set<Class> unimportClass;
+    private final String packagePath = "output";
 
     public Mapper(Class<S> source, Class<T> target, String prefix) throws Exception {
         this.prefix = capitalizeFirstLetter(prefix);
-        File file = new File("~/output/" + this.prefix + "Mapper.java");
-        File propertiesFile = new File(this.getClass().getClassLoader().getResource("map.properties").getFile());
+        File file = new File("src/main/java/" + packagePath + "/" + this.prefix + "Mapper.java");
+        if (!file.exists()) {
+            file.getParentFile().createNewFile();
+        }
+        writer = new PrintWriter(file);
         filename = this.prefix + "Mapper.java";
-        writer = new PrintWriter(filename, "UTF-8");
-//        String path = propertiesFile.getAbsolutePath();
-//        writer = new PrintWriter(file);
         this.source = source;
         this.target = target;
         sourceFields = source.getDeclaredFields();
@@ -38,6 +39,7 @@ public class Mapper <S, T> {
         fieldMap = buildFieldMap();
         output = new LinkedList<>();
         importClass = new LinkedList<>();
+        unimportClass = buildUnimportClass();
     }
 
     public void mapClass() throws Exception {
@@ -64,22 +66,18 @@ public class Mapper <S, T> {
         outputToFile();
     }
 
-    /**
-     * Prevent the duplication of import classes
-     * @param importClass
-     */
-    private void addToImport(String importClass) {
-        this.importClass.add(importClass);
+    private void addToImport(Class clazz) {
+        String oneImport = String.format("import %s;", clazz.getCanonicalName());
+        if (!unimportClass.contains(clazz) && !importClass.contains(oneImport)) {
+            this.importClass.add(oneImport);
+        }
     }
 
     private void generateCodeHead() {
         String sourceName = source.getSimpleName();
         String targetName = target.getSimpleName();
-        String fullSourceName = source.getCanonicalName();
-        String fullTargetName = target.getCanonicalName();
-
-        importClass.add(String.format("import %s;", fullSourceName));
-        importClass.add(String.format("import %s;", fullTargetName));
+        addToImport(source);
+        addToImport(target);
         output.add(String.format("\npublic class %sMapper {", prefix));
         output.add(String.format("\tpublic %s map(%s source) {", targetName, sourceName));
         output.add(String.format("\t\t%s target = new %s();", targetName, targetName));
@@ -127,6 +125,16 @@ public class Mapper <S, T> {
         return map;
     }
 
+    private Set<Class> buildUnimportClass() {
+        Set<Class> set = new HashSet<>();
+        set.add(String.class);
+        set.add(Integer.class);
+        set.add(Long.class);
+        set.add(Character.class);
+        set.add(Double.class);
+        return set;
+    }
+
     /**
      *
      * @param srcFieldName
@@ -135,6 +143,10 @@ public class Mapper <S, T> {
     private void mapPropertyList(String srcFieldName, String tgtFieldName) throws NoSuchFieldException  {//,ParameterizedType genericType) {
         ParameterizedType srcGeneType = (ParameterizedType) source.getDeclaredField(srcFieldName).getGenericType();
         ParameterizedType tgtGeneType = (ParameterizedType) target.getDeclaredField(tgtFieldName).getGenericType();
+        addToImport((Class) srcGeneType.getActualTypeArguments()[0]);
+        addToImport((Class) tgtGeneType.getActualTypeArguments()[0]);
+        addToImport(List.class);
+        addToImport(ArrayList.class);
         if (srcGeneType.equals(tgtGeneType)) {
             mapProperty(srcFieldName, tgtFieldName, true);
         } else {
@@ -162,11 +174,13 @@ public class Mapper <S, T> {
         Field[] srcFields = srcGeneClass.getDeclaredFields();
         for (Field field : srcFields) {
             String name = capitalizeFirstLetter(field.getName());
-            output.add(String.format("\t\t\ttgt.set%s(src.get%s);", name, name));
+            output.add(String.format("\t\t\ttgt.set%s(src.get%s());", name, name));
         }
     }
 
     private void outputToFile() {
+        Collections.sort(importClass); // TODO Use merge sort to accelerate sorting
+        importClass.addFirst(String.format("package %s;\n", packagePath));
         importClass.addAll(output);
         for (String line : importClass) {
             writer.println(line);
