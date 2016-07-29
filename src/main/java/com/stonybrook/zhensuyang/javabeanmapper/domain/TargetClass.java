@@ -18,8 +18,8 @@ public class TargetClass {
     private String targetC;
 
     private List<String> listA;
-    private List<String> listB;
-    private List<String> listC;
+    private List<TargetType> listB;
+    private List<TargetType> listC;
 
     public String getName() {
         return name;
@@ -67,5 +67,29 @@ public class TargetClass {
 
     public void setTargetC(String targetC) {
         this.targetC = targetC;
+    }
+
+    public List<String> getListA() {
+        return listA;
+    }
+
+    public void setListA(List<String> listA) {
+        this.listA = listA;
+    }
+
+    public List<TargetType> getListB() {
+        return listB;
+    }
+
+    public void setListB(List<TargetType> listB) {
+        this.listB = listB;
+    }
+
+    public List<TargetType> getListC() {
+        return listC;
+    }
+
+    public void setListC(List<TargetType> listC) {
+        this.listC = listC;
     }
 }

@@ -7,9 +7,32 @@ public class TestMapper {
 		target.setName(source.getName());
 		target.setAge(source.getAge());
 		target.setAddress(source.getAddress());
-		target.setTargetC(source.getSourceC());
-		target.setTargetB(source.getSourceB());
 		target.setTargetA(source.getSourceA());
+		target.setTargetB(source.getSourceB());
+		target.setTargetC(source.getSourceC());
 		return target;
+	}
+		target.setListA(source.getListA());
+
+	private List<TargetType> mapListCToListC(List<SourceType> list) {
+		List<TargetType> res = new ArrayList<>();
+		for (SourceType src : list) {
+			TargetType tgt = new TargetType();
+			tgt.setTypeA(src.getTypeA);
+			tgt.setTypeB(src.getTypeB);
+			res.add(tgt);
+		}
+		return res;
+	}
+
+	private List<TargetType> mapListBToListB(List<SourceType> list) {
+		List<TargetType> res = new ArrayList<>();
+		for (SourceType src : list) {
+			TargetType tgt = new TargetType();
+			tgt.setTypeA(src.getTypeA);
+			tgt.setTypeB(src.getTypeB);
+			res.add(tgt);
+		}
+		return res;
 	}
 }

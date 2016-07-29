@@ -19,8 +19,8 @@ public class SourceClass {
 
     // fields with list type
     private List<String> listA;
-    private List<String> listB;
-    private List<String> listC;
+    private List<SourceType> listB;
+    private List<SourceType> listC;
 
     public String getName() {
         return name;
@@ -68,5 +68,29 @@ public class SourceClass {
 
     public void setSourceC(String sourceC) {
         this.sourceC = sourceC;
+    }
+
+    public List<String> getListA() {
+        return listA;
+    }
+
+    public void setListA(List<String> listA) {
+        this.listA = listA;
+    }
+
+    public List<SourceType> getListB() {
+        return listB;
+    }
+
+    public void setListB(List<SourceType> listB) {
+        this.listB = listB;
+    }
+
+    public List<SourceType> getListC() {
+        return listC;
+    }
+
+    public void setListC(List<SourceType> listC) {
+        this.listC = listC;
     }
 }

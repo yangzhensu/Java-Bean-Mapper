@@ -1,18 +1,11 @@
 package com.stonybrook.zhensuyang.javabeanmapper.tool;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-
-import javax.swing.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.*;
-import java.util.logging.Logger;
 
 /**
  * Created by zhensuyang on 7/28/16.
@@ -21,41 +14,45 @@ public class Mapper <S, T> {
 
     private PrintWriter writer;
     private String filename;
-    private Logger logger; // learn how to configure the logger
+//    private Logger logger; // learn how to configure the logger
     private String prefix;
     private Class<S> source;
     private Class<T> target;
+    private Map<String, String> fieldMap;
+    private Field[] sourceFields;
+    private Field[] targetFields;
+
 
     public Mapper(Class<S> source, Class<T> target, String prefix) throws IOException {
-        this.prefix = firstLetterToUpperCase(prefix);
+        this.prefix = capitalizeFirstLetter(prefix);
         filename = this.prefix + "Mapper.java";
         writer = new PrintWriter(filename, "UTF-8");
-        logger = Logger.getLogger("Map Logger");
         this.source = source;
         this.target = target;
+        sourceFields = source.getDeclaredFields();
+        targetFields = target.getDeclaredFields();
+        fieldMap = buildFieldMap();
     }
 
-    public void mapClass() throws IOException {
-        Field[] sourceFields = source.getDeclaredFields();
-        Field[] targetFields = target.getDeclaredFields();
+    public void mapClass() throws Exception {
         Set<String> targetFieldNameSet = new HashSet<String>(targetFields.length*2);
         for (Field field : targetFields) {
             targetFieldNameSet.add(field.getName());
         }
-        Set<String> unmappedFields = Sets.newHashSet();
         generateCodeHead();
+        Map<String, String> listFieldMap = new HashMap<>();
+
         for (Field field : sourceFields) {
-            if (field.getType() == List.class) {
-                mapPropertyList(field.getName(), (ParameterizedType) field.getGenericType());
-            } else if (targetFieldNameSet.contains(field.getName())) {
-                mapProperty(field.getName());
-            } else {
-                unmappedFields.add(field.getName());
+            String srcFieldName = field.getName();
+            if (field.getType() != List.class) { // not list
+                mapProperty(srcFieldName, fieldMap.get(srcFieldName));
+            } else { // list
+                listFieldMap.put(srcFieldName, fieldMap.get(srcFieldName));
             }
         }
-        mapOtherProperties(unmappedFields);
         generateCodeTail();
-        warning(unmappedFields);
+        mapListField(listFieldMap);
+        writer.println("}");
 
         // if the name are not the same
         writer.close();
@@ -75,14 +72,9 @@ public class Mapper <S, T> {
 
     }
 
-    private void mapProperty(String fieldName) {
-        fieldName = firstLetterToUpperCase(fieldName);
-        writer.println(String.format("\t\ttarget.set%s(source.get%s());", fieldName, fieldName));
-    }
-
     private void mapProperty(String sourceProp, String targetProp) {
-        sourceProp = firstLetterToUpperCase(sourceProp);
-        targetProp = firstLetterToUpperCase(targetProp);
+        sourceProp = capitalizeFirstLetter(sourceProp);
+        targetProp = capitalizeFirstLetter(targetProp);
         writer.println(String.format("\t\ttarget.set%s(source.get%s());", targetProp, sourceProp));
     }
 
@@ -95,56 +87,70 @@ public class Mapper <S, T> {
     private void generateCodeTail() {
         writer.println("\t\treturn target;");
         writer.println("\t}");
-        writer.println("}");
     }
 
-    private String firstLetterToUpperCase(String str) {
+    private void mapListField(Map<String, String> listFieldMap) throws NoSuchFieldException {
+        for (Map.Entry<String, String> entry : listFieldMap.entrySet()) {
+            mapPropertyList(entry.getKey(), entry.getValue());
+        }
+    }
+
+    private String capitalizeFirstLetter(String str) {
         return Character.toUpperCase(str.charAt(0)) + str.substring(1);
     }
 
-    /**
-     *
-     * @param set
-     * @throws IOException
-     */
-    private void mapOtherProperties(Set<String> set) throws IOException {
+    private Map<String, String> buildFieldMap() throws IOException {
         Properties properties = new Properties();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         InputStream inputStream = classLoader.getResourceAsStream("map.properties");
         properties.load(inputStream);
-        Enumeration e = properties.propertyNames();
-        while (e.hasMoreElements()) {
-            String key = e.nextElement().toString();
-            set.remove(key);
-            String val = properties.getProperty(key);
-            mapProperty(key, val);
+        Map<String, String> map = new HashMap<>((Map)properties);
+        for (Field field : sourceFields) {
+            String fieldName = field.getName();
+            if (!map.containsKey(fieldName)) {
+                map.put(fieldName, fieldName);
+            }
         }
+        return map;
     }
 
     /**
-     * If the generic type of the lists are the same, just use setter(getter());
-     * If not,
-     * @param name
-     * @param genericType
+     *
+     * @param srcFieldName
+     * @param tgtFieldName
      */
-    private void mapPropertyList(String name, ParameterizedType genericType) {
-
+    private void mapPropertyList(String srcFieldName, String tgtFieldName) throws NoSuchFieldException  {//,ParameterizedType genericType) {
+        ParameterizedType srcGeneType = (ParameterizedType) source.getDeclaredField(srcFieldName).getGenericType();
+        ParameterizedType tgtGeneType = (ParameterizedType) target.getDeclaredField(tgtFieldName).getGenericType();
+        if (srcGeneType.equals(tgtGeneType)) {
+            mapProperty(srcFieldName, tgtFieldName);
+        } else {
+            mapPropertyListWithDiffGenericType(srcFieldName, srcGeneType, tgtFieldName, tgtGeneType);
+        }
     }
 
-    private void mapPropertyListWithSameGenericType() {
-
+    private void mapPropertyListWithDiffGenericType(String srcFieldName, ParameterizedType srcGeneType, String tgtFieldName, ParameterizedType tgtGeneType) {
+        Class srcGeneClass = (Class) srcGeneType.getActualTypeArguments()[0];
+        Class tgtGeneClass = (Class) tgtGeneType.getActualTypeArguments()[0];
+        String srcGeneClassName = srcGeneClass.getSimpleName();
+        String tgtGeneClassName = tgtGeneClass.getSimpleName();
+        writer.println(String.format("\n\tprivate List<%s> map%sTo%s(List<%s> list) {", tgtGeneClassName, capitalizeFirstLetter(srcFieldName), capitalizeFirstLetter(tgtFieldName), srcGeneClassName));
+        writer.println(String.format("\t\tList<%s> res = new ArrayList<>();", tgtGeneClassName));
+        writer.println(String.format("\t\tfor (%s src : list) {", srcGeneClassName));
+        writer.println(String.format("\t\t\t%s tgt = new %s();", tgtGeneClassName, tgtGeneClassName));
+        mapGenericType(srcGeneClass, tgtGeneClass);
+        writer.println(String.format("\t\t\tres.add(tgt);"));
+        writer.println(String.format("\t\t}"));
+        writer.println(String.format("\t\treturn res;"));
+        writer.println(String.format("\t}"));
     }
 
-    private void mapPropertyListWithDiffGenericType(String name, ParameterizedType genericType) {
-        name = firstLetterToUpperCase(name);
-        Class genericClass = (Class) genericType.getActualTypeArguments()[0];
-        String genericName = genericClass.getSimpleName();
-        writer.println(String.format("\nprivate void map%name(List<%s> list) {", name, genericName));
-        writer.println(String.format("\n\nfor (%s temp : list) {"));
-        writer.println(String.format("\n\n\n"));
-        writer.println(String.format("\n\n\n"));
-        writer.println(String.format("\n\n}"));
-        writer.println(String.format("\n}"));
+    private void mapGenericType(Class srcGeneClass, Class tgtGeneClass) {
+        Field[] srcFields = srcGeneClass.getDeclaredFields();
+        for (Field field : srcFields) {
+            String name = capitalizeFirstLetter(field.getName());
+            writer.println(String.format("\t\t\ttgt.set%s(src.get%s);", name, name));
+        }
     }
 
 }

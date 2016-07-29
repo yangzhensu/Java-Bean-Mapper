@@ -10,8 +10,8 @@ import java.io.IOException;
  * Created by zhensuyang on 7/28/16.
  */
 public class MapperTest {
-    public static void main(String[] args) throws IOException {
-        Mapper mapper = new Mapper("Test");
-        mapper.mapClass(SourceClass.class, TargetClass.class);
+    public static void main(String[] args) throws Exception {
+        Mapper mapper = new Mapper(SourceClass.class, TargetClass.class, "Test");
+        mapper.mapClass();
     }
 }
