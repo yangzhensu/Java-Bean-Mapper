@@ -7,9 +7,9 @@ public class TestMapper {
 		target.setName(source.getName());
 		target.setAge(source.getAge());
 		target.setAddress(source.getAddress());
+		target.setTargetC(source.getSourceC());
+		target.setTargetB(source.getSourceB());
+		target.setTargetA(source.getSourceA());
 		return target;
 	}
 }
-// Field sourceA is not mapped.
-// Field sourceB is not mapped.
-// Field sourceC is not mapped.
