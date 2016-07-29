@@ -55,7 +55,7 @@ public class Mapper <S, T> {
         for (Field field : sourceFields) {
             String srcFieldName = field.getName();
             if (field.getType() != List.class) { // not list
-                mapProperty(srcFieldName, fieldMap.get(srcFieldName), false);
+                mapProperty(srcFieldName, fieldMap.get(srcFieldName), false, false);
             } else { // list
                 listFieldMap.put(srcFieldName, fieldMap.get(srcFieldName));
             }
@@ -85,7 +85,7 @@ public class Mapper <S, T> {
         output.add(String.format("\t\t%s target = new %s();", targetName, targetName));
     }
 
-    private void mapProperty(String sourceProp, String targetProp, boolean isList) {
+    private void mapProperty(String sourceProp, String targetProp, boolean isList, boolean isGenericTheSame) {
         sourceProp = capitalizeFirstLetter(sourceProp);
         targetProp = capitalizeFirstLetter(targetProp);
         String line = String.format("\t\ttarget.set%s(source.get%s());", targetProp, sourceProp);
@@ -93,6 +93,9 @@ public class Mapper <S, T> {
             output.add(line);
         } else { // TODO Optimize the code here: put the list in another linked list and added them together
             int index = output.indexOf("\t\treturn target;");
+            if (!isGenericTheSame) {
+                line = String.format("\t\ttarget.set%s(map%sTo%s(source.get%s()));", targetProp, sourceProp, targetProp, sourceProp);
+            }
             output.add(index, line);
         }
     }
@@ -150,12 +153,20 @@ public class Mapper <S, T> {
         addToImport(List.class);
         addToImport(ArrayList.class);
         if (srcGeneType.equals(tgtGeneType)) {
-            mapProperty(srcFieldName, tgtFieldName, true);
+            mapProperty(srcFieldName, tgtFieldName, true, true);
         } else {
+            mapProperty(srcFieldName, tgtFieldName, true, false);
             mapPropertyListWithDiffGenericType(srcFieldName, srcGeneType, tgtFieldName, tgtGeneType);
         }
     }
 
+    /**
+     * TODO Add setB(mapAToB(A));
+     * @param srcFieldName
+     * @param srcGeneType
+     * @param tgtFieldName
+     * @param tgtGeneType
+     */
     private void mapPropertyListWithDiffGenericType(String srcFieldName, ParameterizedType srcGeneType, String tgtFieldName, ParameterizedType tgtGeneType) {
         Class srcGeneClass = (Class) srcGeneType.getActualTypeArguments()[0];
         Class tgtGeneClass = (Class) tgtGeneType.getActualTypeArguments()[0];

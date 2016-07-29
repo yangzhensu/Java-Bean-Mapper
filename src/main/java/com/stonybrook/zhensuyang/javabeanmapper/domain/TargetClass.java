@@ -18,7 +18,7 @@ public class TargetClass {
     private String targetC;
 
     private List<String> listA;
-    private List<TargetType> listB;
+    private List<TargetType> targetListB;
     private List<TargetType> listC;
 
     public String getName() {
@@ -77,12 +77,12 @@ public class TargetClass {
         this.listA = listA;
     }
 
-    public List<TargetType> getListB() {
-        return listB;
+    public List<TargetType> getTargetListB() {
+        return targetListB;
     }
 
-    public void setListB(List<TargetType> listB) {
-        this.listB = listB;
+    public void setTargetListB(List<TargetType> targetListB) {
+        this.targetListB = targetListB;
     }
 
     public List<TargetType> getListC() {
