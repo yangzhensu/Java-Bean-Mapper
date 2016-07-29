@@ -6,7 +6,9 @@ import java.lang.reflect.ParameterizedType;
 import java.util.*;
 
 /**
- * Created by zhensuyang on 7/28/16.
+ * Generate a mapper for mapping Java Beans
+ * @author zhensuyang
+ * @date 7/28/16.
  */
 public class Mapper <S, T> {
 
