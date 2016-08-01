@@ -9,6 +9,8 @@ import java.util.*;
  * Generate a mapper for mapping Java Beans
  * @author zhensuyang
  * @date 7/28/16.
+ * TODO: Map the super classes' fields using their setter and getter
+ * TODO: Use the methods whose name starts with "set" or "get"
  */
 public class Mapper <S, T> {
 
